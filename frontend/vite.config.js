@@ -1,9 +1,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import cesium from "vite-plugin-cesium";
 
 export default defineConfig({
-  plugins: [react(), cesium()],
+  plugins: [react()],
   server: {
     port: 5173,
     proxy: {
@@ -11,6 +10,18 @@ export default defineConfig({
         target: "http://localhost:8000",
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ""),
+      },
+    },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-three": ["three"],
+          "vendor-r3f":   ["@react-three/fiber", "@react-three/drei"],
+          "vendor-react": ["react", "react-dom"],
+          "vendor-charts": ["recharts"],
+        },
       },
     },
   },
