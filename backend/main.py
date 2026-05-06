@@ -96,6 +96,8 @@ def orbit_preview(
         period_minutes=params["period_minutes"],
         orbital_velocity_ms=params["orbital_velocity_ms"],
         ground_track=params["ground_track"],
+        orbit_points=params["orbit_points"],
+        current_position=params["current_position"],
         cesium_czml=params["cesium_czml"],
     )
 
@@ -173,7 +175,10 @@ def validate_window(req: ValidateWindowRequest):
     wx   = interpolate_weather_at(dt, weather_forecast)
 
     from scorer import _weather_score as wx_score_fn, _risk_level as risk_fn
-    wx_score = wx_score_fn(wx.cloud_cover_pct, wx.wind_speed_ms, wx.precipitation_mm, wx.lightning_risk)
+    wx_score = wx_score_fn(
+        wx.cloud_cover_pct, wx.wind_speed_ms, wx.precipitation_mm, wx.lightning_risk,
+        pressure_hpa=wx.pressure_hpa, wind_gust_ms=wx.wind_gust_ms
+    )
 
     w_orb = w_dv = 0.40
     w_wx  = 0.20

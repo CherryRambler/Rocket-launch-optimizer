@@ -15,7 +15,7 @@ const EarthScene = lazy(() => import("./EarthScene"));
 
 export default function Dashboard({ onCalculate }) {
   const { windows, loading, feedLines, error, chartData,
-          selectedWindow, formValues } = useApp();
+          selectedWindow, formValues, chartMeta, chartExpanding } = useApp();
   const hasResults = windows.length > 0;
   const orbitType  = formValues?.orbit_type ?? "LEO";
 
@@ -64,17 +64,22 @@ export default function Dashboard({ onCalculate }) {
           <LiquidGlassCard
             accent
             style={{ gridColumn: "1 / 9" }}
-            className="bento-pad bento-flex-between"
+            className="bento-pad bento-flex-between summary-card"
           >
-            <div>
-              <p className="section-label" style={{ marginBottom: 8 }}>Next optimal window</p>
+            <div className="summary-main">
+              <p className="section-label summary-title">Next optimal window</p>
               <CountdownTimer windows={windows} />
             </div>
-            <ExportButton />
+            <div className="summary-export">
+              <ExportButton />
+            </div>
           </LiquidGlassCard>
 
           {/* Stats mini-cards */}
-          <LiquidGlassCard style={{ gridColumn: "9 / 13" }} className="bento-pad bento-stats-grid">
+          <LiquidGlassCard
+            style={{ gridColumn: "9 / 13" }}
+            className="summary-stats-card"
+          >
             <StatCard label="Slots"      value={new Intl.NumberFormat().format(windows.length * 50)} />
             <StatCard label="Best score" value={windows[0]?.score_total.toFixed(1)} accent />
             <StatCard label="Orbit"      value={orbitType} />
@@ -82,21 +87,31 @@ export default function Dashboard({ onCalculate }) {
           </LiquidGlassCard>
 
           {/* What-If + Windows */}
-          <LiquidGlassCard style={{ gridColumn: "1 / 4" }} className="bento-pad">
+          <LiquidGlassCard style={{ gridColumn: "1 / 5", overflow: "visible" }} className="bento-pad">
             <p className="section-label">What-If Simulator</p>
             <WhatIfSimulator onRecalculate={onCalculate} />
           </LiquidGlassCard>
 
-          <LiquidGlassCard style={{ gridColumn: "4 / 13" }} className="bento-pad">
+          <LiquidGlassCard style={{ gridColumn: "5 / 13" }} className="bento-pad">
             <p className="section-label">Launch Windows — Top {windows.length}</p>
             <ResultCards windows={windows} />
           </LiquidGlassCard>
 
           {/* Heatmap */}
           {chartData.length > 0 && (
-            <LiquidGlassCard style={{ gridColumn: "1 / 13" }} className="bento-pad">
+            <LiquidGlassCard
+              style={{ gridColumn: "1 / 13", minHeight: 0 }}
+              className="bento-pad heatmap-card--compact"
+            >
               <p className="section-label">Score Heatmap — All Candidate Slots</p>
-              <HeatmapCalendar data={chartData} topWindows={windows} />
+              <HeatmapCalendar
+                data={chartData}
+                topWindows={windows}
+                userStart={chartMeta?.userStart}
+                userEnd={chartMeta?.userEnd}
+                expanding={chartExpanding}
+                compact
+              />
             </LiquidGlassCard>
           )}
         </>

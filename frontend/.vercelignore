@@ -1,0 +1,8 @@
+node_modules
+.git
+dist
+*.log
+.vscode
+.env
+.env.*
+public/bg.mp4

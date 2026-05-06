@@ -171,6 +171,7 @@ def get_orbit_preview_params(orbit_type: OrbitType, altitude_km: float = None) -
 
     # Sample ground track over 3 orbits
     ground_track = []
+    orbit_points = []
     n_steps = 360
     for i in range(n_steps + 1):
         angle_rad = 2 * math.pi * i / n_steps
@@ -179,7 +180,15 @@ def get_orbit_preview_params(orbit_type: OrbitType, altitude_km: float = None) -
         # Satellite position in orbital plane
         sat_lon = SRIHARIKOTA_LON + math.degrees(angle_rad) - math.degrees(OMEGA_EARTH * t_frac)
         sat_lat = math.degrees(math.asin(math.sin(math.radians(inc_deg)) * math.sin(angle_rad)))
-        ground_track.append({"lon": round(sat_lon % 360 - 180, 3), "lat": round(sat_lat, 3)})
+        norm_lon = round(sat_lon % 360 - 180, 3)
+        norm_lat = round(sat_lat, 3)
+        ground_track.append({"lon": norm_lon, "lat": norm_lat})
+        orbit_points.append({
+            "t_sec": round(t_frac, 1),
+            "lon": norm_lon,
+            "lat": norm_lat,
+            "alt_km": round(params["altitude_km"], 2),
+        })
 
     # CZML cartesian positions (inertial frame, one orbit)
     czml_positions = []
@@ -190,6 +199,12 @@ def get_orbit_preview_params(orbit_type: OrbitType, altitude_km: float = None) -
         y = r * math.sin(angle) * math.cos(math.radians(inc_deg))
         z = r * math.sin(angle) * math.sin(math.radians(inc_deg))
         czml_positions.extend([t_s, x, y, z])
+
+    now_utc = datetime.now(timezone.utc)
+    phase_seconds = now_utc.timestamp() % period_s
+    phase_ratio = phase_seconds / period_s
+    phase_idx = int((phase_ratio * n_steps * 3) % len(orbit_points))
+    current_point = orbit_points[phase_idx]
 
     czml = {
         "id": f"{orbit_type.value}_orbit",
@@ -213,5 +228,10 @@ def get_orbit_preview_params(orbit_type: OrbitType, altitude_km: float = None) -
         "period_minutes": round(period_s / 60, 1),
         "orbital_velocity_ms": round(_orbital_velocity(alt_m), 1),
         "ground_track": ground_track,
+        "orbit_points": orbit_points,
+        "current_position": {
+            "timestamp": now_utc.isoformat(),
+            **current_point,
+        },
         "cesium_czml": czml,
     }

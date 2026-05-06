@@ -5,7 +5,6 @@ export default function LiquidGlassCard({ children, style, className = "", accen
       style={style}
       {...rest}
     >
-      <div className="lgc__shimmer" aria-hidden="true" />
       <div className="lgc__inner">{children}</div>
     </div>
   );

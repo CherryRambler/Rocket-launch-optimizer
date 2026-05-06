@@ -1,9 +1,10 @@
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { format, addDays } from "date-fns";
-import { Plus, Trash2, Play } from "lucide-react";
+import { Plus, Trash2, Play, Info, Activity, Wind, Compass } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { calculateWindows } from "../api";
+import LiquidGlassCard from "./LiquidGlassCard";
 
 const today    = format(new Date(), "yyyy-MM-dd");
 const nextWeek = format(addDays(new Date(), 7), "yyyy-MM-dd");
@@ -29,144 +30,181 @@ export default function MissionComparison() {
 
   const runAll = () => slots.forEach((_, i) => run(i));
 
-  // Find slot with earliest best window
   const earliest = slots.filter(s => s.result).reduce((best, s) => {
     if (!best) return s;
     return new Date(s.result.best_window.timestamp) < new Date(best.result.best_window.timestamp) ? s : best;
   }, null);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
 
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
         <div>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: "var(--text)", margin: 0 }}>Mission Comparison</h2>
+          <h2 style={{ fontSize: 24, fontWeight: 800, color: "var(--text)", margin: 0, letterSpacing: "-0.02em" }}>Mission Comparison</h2>
           <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>
-            Compare up to 3 missions side by side
+            Parallel simulation and cross-mission telemetry analysis
           </p>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 10 }}>
           {slots.length < 3 && (
-            <button className="btn-ghost" onClick={() => setSlots(p => [...p, mkSlot()])}>
-              <Plus size={13} /> Add mission
+            <button className="btn-ghost" onClick={() => setSlots(p => [...p, mkSlot()])} style={{ height: 38 }}>
+              <Plus size={14} /> Add Mission Slot
             </button>
           )}
-          <button className="btn-primary" onClick={runAll}>
-            <Play size={13} /> Run all
+          <button className="btn-primary" onClick={runAll} style={{ height: 38, padding: "0 20px" }}>
+            <Play size={14} /> Run Simultaneous Analysis
           </button>
         </div>
       </div>
 
       {/* Columns */}
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${slots.length}, 1fr)`, gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${slots.length}, 1fr)`, gap: 20 }}>
         {slots.map((slot, i) => (
-          <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.08 }} className="card" style={{ padding: 20 }}>
-
+          <LiquidGlassCard key={i} accent={earliest === slot} style={{ padding: 24, display: "flex", flexDirection: "column", minHeight: 600 }}>
             {/* Name + remove */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-              <input
-                value={slot.name}
-                onChange={e => upd(i, "name", e.target.value)}
-                placeholder={`Mission ${i + 1}`}
-                className="field-input"
-                style={{ flex: 1, fontSize: 13, fontWeight: 600 }}
-              />
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+              <div style={{ flex: 1 }}>
+                <p className="mono" style={{ fontSize: 9, color: "var(--text-dim)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>Slot 0{i + 1}</p>
+                <input
+                  value={slot.name}
+                  onChange={e => upd(i, "name", e.target.value)}
+                  placeholder={`Mission Alpha`}
+                  className="field-input"
+                  style={{ width: "100%", fontSize: 15, fontWeight: 700, background: "transparent", border: "none", padding: 0, borderBottom: "1px solid rgba(255,255,255,0.05)" }}
+                />
+              </div>
               {slots.length > 1 && (
                 <button onClick={() => setSlots(p => p.filter((_, idx) => idx !== i))}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 4 }}>
-                  <Trash2 size={13} />
+                  className="btn-icon-ghost" style={{ color: "var(--text-dim)" }}>
+                  <Trash2 size={14} />
                 </button>
               )}
             </div>
 
             {/* Config */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
-              <SelectRow label="Orbit" value={slot.orbit_type} onChange={v => upd(i, "orbit_type", v)} options={["LEO","GEO","SSO"]} />
-              <InputRow  label="Start" type="date" value={slot.start_date} onChange={v => upd(i, "start_date", v)} />
-              <InputRow  label="End"   type="date" value={slot.end_date}   onChange={v => upd(i, "end_date",   v)} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+              <SelectRow label="Target Orbit" value={slot.orbit_type} onChange={v => upd(i, "orbit_type", v)} options={["LEO","GEO","SSO"]} />
+              <InputRow  label="Window Start" type="date" value={slot.start_date} onChange={v => upd(i, "start_date", v)} />
+              <InputRow  label="Window End"   type="date" value={slot.end_date}   onChange={v => upd(i, "end_date",   v)} />
               <InputRow  label="Payload (kg)" type="number" min={1} max={10000}
                 value={slot.payload_mass_kg} onChange={v => upd(i, "payload_mass_kg", v)} />
             </div>
 
-            <button className="btn-ghost" style={{ width: "100%", justifyContent: "center" }}
+            <button className="btn-primary" style={{ width: "100%", justifyContent: "center", height: 40, background: "rgba(0, 212, 255, 0.05)", border: "1px solid rgba(0, 212, 255, 0.2)", color: "var(--cyan)" }}
               onClick={() => run(i)} disabled={slot.loading}>
-              {slot.loading ? "Calculating…" : "Calculate"}
+              {slot.loading ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div className="spin" style={{ width: 12, height: 12, border: "2px solid var(--cyan)", borderTopColor: "transparent", borderRadius: "50%" }} />
+                  Computing...
+                </div>
+              ) : "Initialize Analysis"}
             </button>
 
             {slot.error && (
-              <p className="mono" style={{ fontSize: 11, color: "#f44336", marginTop: 10 }}>{slot.error}</p>
+              <p className="mono" style={{ fontSize: 11, color: "#ff4444", marginTop: 12, padding: 10, background: "rgba(255,68,68,0.05)", borderRadius: 6, border: "1px solid rgba(255,68,68,0.1)" }}>{slot.error}</p>
             )}
 
             {/* Results */}
             {slot.result && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--border)" }}>
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                style={{ marginTop: 24, paddingTop: 24, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
 
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                  <span className={`chip chip-${slot.orbit_type}`}>{slot.orbit_type}</span>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                  <span className={`chip chip-${slot.orbit_type}`} style={{ fontSize: 10, padding: "2px 8px" }}>{slot.orbit_type} ARCHITECTURE</span>
                   {earliest === slot && (
-                    <span style={{ fontSize: 11, color: "var(--green)", fontWeight: 600 }}>Earliest optimal</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--green)" }}>
+                      <Activity size={10} />
+                      <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" }}>Earliest Window</span>
+                    </div>
                   )}
                 </div>
 
-                <p className="mono" style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 8 }}>
-                  Best: {new Date(slot.result.best_window.timestamp).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                </p>
+                <div style={{ background: "rgba(255,255,255,0.02)", padding: 16, borderRadius: 12, border: "1px solid rgba(255,255,255,0.05)", marginBottom: 16 }}>
+                  <p className="mono" style={{ fontSize: 10, color: "var(--text-dim)", textTransform: "uppercase", marginBottom: 8 }}>Primary Window Analysis</p>
+                  <p className="mono" style={{ fontSize: 14, color: "var(--text)", fontWeight: 700, marginBottom: 12 }}>
+                    {new Date(slot.result.best_window.timestamp).toLocaleString("en-IN", { month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                  <ScoreBar score={slot.result.best_window.score_total} />
+                </div>
 
-                <ScoreBar score={slot.result.best_window.score_total} />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+                  <MiniMetric icon={<Wind size={10} />} label="Wind Tol." val={`${slot.result.best_window.wind_speed_ms.toFixed(1)} m/s`} />
+                  <MiniMetric icon={<Compass size={10} />} label="Opt. Azimuth" val={`${slot.result.best_window.azimuth_deg.toFixed(1)}°`} />
+                </div>
 
-                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 4 }}>
-                  {slot.result.windows.slice(0, 4).map(w => (
-                    <div key={w.rank} style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+                  <p className="mono" style={{ fontSize: 9, color: "var(--text-dim)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Alternative Slots</p>
+                  {slot.result.windows.slice(1, 4).map(w => (
+                    <div key={w.rank} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, padding: "6px 8px", background: "rgba(255,255,255,0.01)", borderRadius: 4 }}>
                       <span className="mono" style={{ color: "var(--text-muted)" }}>
-                        #{w.rank} {new Date(w.timestamp).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                         T+{Math.floor((new Date(w.timestamp) - new Date(slot.result.best_window.timestamp))/3600000)}h Shift
                       </span>
-                      <span className="mono" style={{ color: w.score_total >= 80 ? "var(--green)" : w.score_total >= 60 ? "#ffc107" : "#f44336", fontWeight: 600 }}>
-                        {w.score_total}
+                      <span className="mono" style={{ color: w.score_total >= 80 ? "var(--green)" : w.score_total >= 60 ? "#ffc107" : "#ff4444", fontWeight: 700 }}>
+                        {w.score_total}%
                       </span>
                     </div>
                   ))}
                 </div>
 
-                <button className="btn-ghost" style={{ width: "100%", justifyContent: "center", marginTop: 12, fontSize: 12 }}
-                  onClick={() => saveMission(slot.name || `Mission ${i+1}`, slot, slot.result)}>
-                  Save mission
+                <button className="btn-ghost" style={{ width: "100%", justifyContent: "center", height: 36, fontSize: 12 }}
+                  onClick={() => saveMission(slot.name || `Mission 0${i+1}`, slot, slot.result)}>
+                  Archive Mission Profile
                 </button>
               </motion.div>
             )}
-          </motion.div>
+          </LiquidGlassCard>
         ))}
       </div>
 
       {/* Saved missions */}
       {savedMissions.length > 0 && (
-        <div className="card" style={{ padding: 20 }}>
-          <p className="section-label">Saved Missions</p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
+        <LiquidGlassCard style={{ padding: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+            <Info size={16} color="var(--cyan)" />
+            <p className="section-label" style={{ margin: 0 }}>Mission Archive</p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
             {savedMissions.map(m => (
-              <div key={m.name} style={{ padding: "12px 14px", border: "1px solid var(--border)", borderRadius: 8 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{m.name}</span>
+              <div key={m.name} style={{ padding: 16, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 12, position: "relative" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+                  <div>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>{m.name}</span>
+                    <p className="mono" style={{ fontSize: 10, color: "var(--text-dim)", marginTop: 2 }}>{m.config?.orbit_type} ARCHITECTURE</p>
+                  </div>
                   <button onClick={() => deleteMission(m.name)}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-dim)" }}>
-                    <Trash2 size={12} />
+                    className="btn-icon-ghost" style={{ color: "rgba(255,68,68,0.4)" }}>
+                    <Trash2 size={13} />
                   </button>
                 </div>
-                <p className="mono" style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                  {m.config?.orbit_type} · {m.config?.payload_mass_kg} kg
-                </p>
-                {m.results && (
-                  <p className="mono" style={{ fontSize: 12, color: "var(--cyan)", marginTop: 4 }}>
-                    Best score: {m.results.best_window?.score_total}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+                   <p className="mono" style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                    {m.config?.payload_mass_kg.toLocaleString()}kg Payload
                   </p>
-                )}
+                  {m.results && (
+                    <div style={{ textAlign: "right" }}>
+                      <p className="mono" style={{ fontSize: 9, color: "var(--text-dim)", textTransform: "uppercase" }}>Peak Efficiency</p>
+                      <p className="mono" style={{ fontSize: 14, color: "var(--cyan)", fontWeight: 800 }}>{m.results.best_window?.score_total}%</p>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
-        </div>
+        </LiquidGlassCard>
       )}
+    </div>
+  );
+}
+
+function MiniMetric({ icon, label, val }) {
+  return (
+    <div style={{ padding: "8px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 8, border: "1px solid rgba(255,255,255,0.04)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+        <span style={{ color: "var(--text-dim)" }}>{icon}</span>
+        <span style={{ fontSize: 9, color: "var(--text-dim)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</span>
+      </div>
+      <p className="mono" style={{ fontSize: 12, fontWeight: 700, color: "var(--text)" }}>{val}</p>
     </div>
   );
 }
@@ -176,20 +214,30 @@ function ScoreBar({ score }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <div className="progress-track" style={{ flex: 1 }}>
-        <motion.div style={{ height: "100%", background: color, borderRadius: 1 }}
-          initial={{ width: 0 }} animate={{ width: `${score}%` }} transition={{ duration: 0.7 }} />
+        <motion.div
+          style={{ height: "100%", background: color, borderRadius: 1 }}
+          initial={{ width: 0 }}
+          animate={{ width: `${score}%` }}
+          transition={{ duration: 0.7 }}
+        />
       </div>
-      <span className="mono" style={{ fontSize: 13, fontWeight: 700, color, minWidth: 32 }}>{score}</span>
+      <span className="mono" style={{ fontSize: 13, fontWeight: 700, color, minWidth: 32 }}>
+        {score}
+      </span>
     </div>
   );
 }
 
 function SelectRow({ label, value, onChange, options }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <span style={{ fontSize: 11, color: "var(--text-muted)", minWidth: 56 }}>{label}</span>
-      <select value={value} onChange={e => onChange(e.target.value)}
-        className="field-input" style={{ flex: 1, padding: "6px 10px" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <span style={{ fontSize: 11, color: "var(--text-muted)", minWidth: 80 }}>{label}</span>
+      <select 
+        value={value} 
+        onChange={e => onChange(e.target.value)}
+        className="field-input" 
+        style={{ flex: 1, padding: "6px 12px", background: "rgba(255,255,255,0.03)" }}
+      >
         {options.map(o => <option key={o} value={o}>{o}</option>)}
       </select>
     </div>
@@ -198,10 +246,14 @@ function SelectRow({ label, value, onChange, options }) {
 
 function InputRow({ label, onChange, ...props }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <span style={{ fontSize: 11, color: "var(--text-muted)", minWidth: 56 }}>{label}</span>
-      <input className="field-input" style={{ flex: 1, padding: "6px 10px" }}
-        onChange={e => onChange(e.target.value)} {...props} />
+    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <span style={{ fontSize: 11, color: "var(--text-muted)", minWidth: 80 }}>{label}</span>
+      <input 
+        className="field-input" 
+        style={{ flex: 1, padding: "6px 12px", background: "rgba(255,255,255,0.03)" }}
+        onChange={e => onChange(e.target.value)} 
+        {...props} 
+      />
     </div>
   );
 }

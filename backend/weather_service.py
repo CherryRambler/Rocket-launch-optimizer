@@ -36,12 +36,16 @@ def _risk_level(cloud: float, wind: float, lightning: bool) -> str:
 
 
 def _weather_score(cloud: float, wind: float, precip: float, lightning: bool,
-                   wind_tolerance_ms: float = MAX_WIND_MS) -> float:
+                   wind_tolerance_ms: float = MAX_WIND_MS,
+                   pressure_hpa: float = 1013.0,
+                   wind_gust_ms: float = 0.0) -> float:
     cloud_score  = max(0.0, 100.0 - cloud)
     wind_score   = max(0.0, 100.0 - (wind / wind_tolerance_ms) * 100)
     precip_pen   = min(100.0, precip * 20)
+    gust_pen     = min(35.0, max(0.0, (wind_gust_ms - wind) * 4.0))
+    pressure_pen = min(20.0, abs(pressure_hpa - 1013.25) * 0.6)
     lightning_pen = 50.0 if lightning else 0.0
-    raw = cloud_score * 0.4 + wind_score * 0.4 - precip_pen * 0.2 - lightning_pen
+    raw = cloud_score * 0.38 + wind_score * 0.38 - precip_pen * 0.14 - gust_pen - pressure_pen - lightning_pen
     return round(max(0.0, min(100.0, raw)), 2)
 
 
@@ -58,8 +62,10 @@ def _synthetic_point(dt: datetime) -> WeatherData:
     temp    = round(28 + (1 - monsoon) * 8 + r * 5, 1)
     precip  = round(max(0.0, (r - 0.65) * 12 * monsoon), 2)
     humidity = round(55 + monsoon * 30 + r * 10, 1)
+    pressure = round(1005 + (1 - monsoon) * 8 + (0.5 - r) * 6, 1)
+    wind_gust = round(wind + 1.0 + r * 3.5, 1)
     lightning = cloud > LIGHTNING_CLOUD
-    score   = _weather_score(cloud, wind, precip, lightning)
+    score   = _weather_score(cloud, wind, precip, lightning, pressure_hpa=pressure, wind_gust_ms=wind_gust)
 
     return WeatherData(
         timestamp=dt,
@@ -69,6 +75,8 @@ def _synthetic_point(dt: datetime) -> WeatherData:
         temperature_c=temp,
         precipitation_mm=precip,
         humidity_pct=min(100.0, humidity),
+        pressure_hpa=pressure,
+        wind_gust_ms=wind_gust,
         lightning_risk=lightning,
         weather_score=score,
         launch_risk_level=_risk_level(cloud, wind, lightning),
@@ -92,7 +100,7 @@ def _fetch_open_meteo(start_date: str, end_date: str) -> List[WeatherData]:
     r = requests.get(OPEN_METEO_URL, params={
         "latitude": SRIHARIKOTA_LAT,
         "longitude": SRIHARIKOTA_LON,
-        "hourly": "temperature_2m,relative_humidity_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,weather_code",
+        "hourly": "temperature_2m,relative_humidity_2m,precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,weather_code",
         "wind_speed_unit": "ms",
         "start_date": start_date,
         "end_date": end_date,
@@ -109,9 +117,11 @@ def _fetch_open_meteo(start_date: str, end_date: str) -> List[WeatherData]:
         temp     = float(hourly["temperature_2m"][i] or 30)
         precip   = float(hourly["precipitation"][i] or 0)
         humidity = float(hourly["relative_humidity_2m"][i] or 60)
+        pressure = float(hourly["surface_pressure"][i] or 1013)
+        wind_gust = float(hourly["wind_gusts_10m"][i] or wind)
         wcode    = int(hourly["weather_code"][i] or 0)
         lightning = wcode in (95, 96, 99)
-        score = _weather_score(cloud, wind, precip, lightning)
+        score = _weather_score(cloud, wind, precip, lightning, pressure_hpa=pressure, wind_gust_ms=wind_gust)
         results.append(WeatherData(
             timestamp=dt,
             cloud_cover_pct=cloud,
@@ -120,6 +130,8 @@ def _fetch_open_meteo(start_date: str, end_date: str) -> List[WeatherData]:
             temperature_c=temp,
             precipitation_mm=precip,
             humidity_pct=humidity,
+            pressure_hpa=pressure,
+            wind_gust_ms=wind_gust,
             lightning_risk=lightning,
             weather_score=score,
             launch_risk_level=_risk_level(cloud, wind, lightning),
@@ -202,8 +214,10 @@ def interpolate_weather_at(dt: datetime, forecast: List[WeatherData]) -> Weather
     temp     = lerp(before.temperature_c, after.temperature_c)
     precip   = lerp(before.precipitation_mm, after.precipitation_mm)
     humidity = lerp(before.humidity_pct, after.humidity_pct)
+    pressure = lerp(before.pressure_hpa, after.pressure_hpa)
+    wind_gust = lerp(before.wind_gust_ms, after.wind_gust_ms)
     lightning = cloud > LIGHTNING_CLOUD
-    score = _weather_score(cloud, wind, precip, lightning)
+    score = _weather_score(cloud, wind, precip, lightning, pressure_hpa=pressure, wind_gust_ms=wind_gust)
 
     return WeatherData(
         timestamp=dt,
@@ -213,6 +227,8 @@ def interpolate_weather_at(dt: datetime, forecast: List[WeatherData]) -> Weather
         temperature_c=round(temp, 1),
         precipitation_mm=round(precip, 2),
         humidity_pct=round(humidity, 1),
+        pressure_hpa=round(pressure, 1),
+        wind_gust_ms=round(wind_gust, 1),
         lightning_risk=lightning,
         weather_score=score,
         launch_risk_level=_risk_level(cloud, wind, lightning),

@@ -2,12 +2,27 @@ import { createContext, useContext, useState, useCallback, useRef } from "react"
 
 const AppContext = createContext(null);
 
+export const LAUNCH_SITES = [
+  { id: "sdsc", name: "Satish Dhawan (SDSC)", location: "Sriharikota", lat: 13.72, lon: 80.23, country: "India", timezone: "Asia/Kolkata" },
+  { id: "ksc", name: "Kennedy Space Center", location: "Florida", lat: 28.57, lon: -80.65, country: "USA", timezone: "America/New_York" },
+  { id: "baik", name: "Baikonur Cosmodrome", location: "Kazakhstan", lat: 45.96, lon: 63.31, country: "Kazakhstan", timezone: "Asia/Almaty" },
+  { id: "kour", name: "Guiana Space Centre", location: "Kourou", lat: 5.24, lon: -52.76, country: "France", timezone: "America/Cayenne" },
+  { id: "tane", name: "Tanegashima Center", location: "Japan", lat: 30.37, lon: 130.96, country: "Japan", timezone: "Asia/Tokyo" },
+  { id: "vdb", name: "Vandenberg Base", location: "California", lat: 34.74, lon: -120.57, country: "USA", timezone: "America/Los_Angeles" },
+  { id: "mhia", name: "Mahia Complex", location: "New Zealand", lat: -39.26, lon: 177.86, country: "New Zealand", timezone: "Pacific/Auckland" }
+];
+
 export function AppProvider({ children }) {
   // ── Mission results ───────────────────────────────────────────────────────
-  const [windows, setWindows]         = useState([]);     // top 20 launch windows
-  const [chartData, setChartData]     = useState([]);     // full timeline
-  const [orbitData, setOrbitData]     = useState(null);   // orbit preview
+  const [windows, setWindows]         = useState([]);
+  const [chartData, setChartData]     = useState([]);
+  const [orbitData, setOrbitData]     = useState(null);
   const [selectedWindow, setSelectedWindow] = useState(null);
+  const [chartMeta, setChartMeta]       = useState(null);
+  const [chartExpanding, setChartExpanding] = useState(false);
+
+  // ── Launch Site State ─────────────────────────────────────────────────────
+  const [selectedSite, setSelectedSite] = useState(LAUNCH_SITES[0]);
 
   // ── Form / config ─────────────────────────────────────────────────────────
   const [formValues, setFormValues] = useState({
@@ -62,7 +77,7 @@ export function AppProvider({ children }) {
     const next = [
       ...savedMissions.filter(m => m.name !== name),
       { name, config, results, savedAt: new Date().toISOString() },
-    ].slice(-6); // keep last 6
+    ].slice(-6);
     setSavedMissions(next);
     localStorage.setItem("savedMissions", JSON.stringify(next));
   }, [savedMissions]);
@@ -85,6 +100,9 @@ export function AppProvider({ children }) {
       chartData, setChartData,
       orbitData, setOrbitData,
       selectedWindow, setSelectedWindow,
+      chartMeta, setChartMeta,
+      chartExpanding, setChartExpanding,
+      selectedSite, setSelectedSite,
       formValues, setFormValues,
       loading, setLoading,
       feedLines, pushFeed, clearFeed,

@@ -31,6 +31,8 @@ def score_windows(
             wx.cloud_cover_pct, wx.wind_speed_ms,
             wx.precipitation_mm, wx.lightning_risk,
             wind_tolerance_ms,
+            pressure_hpa=wx.pressure_hpa,
+            wind_gust_ms=wx.wind_gust_ms,
         )
 
         total = (
@@ -52,7 +54,9 @@ def score_windows(
             cloud_cover_pct=wx.cloud_cover_pct,
             wind_speed_ms=wx.wind_speed_ms,
             wind_direction_deg=wx.wind_direction_deg,
+            wind_gust_ms=wx.wind_gust_ms,
             temperature_c=wx.temperature_c,
+            pressure_hpa=wx.pressure_hpa,
             lightning_risk=wx.lightning_risk,
             launch_risk_level=_risk_level(wx.cloud_cover_pct, wx.wind_speed_ms, wx.lightning_risk),
             orbit_type=orbit_type,
@@ -83,6 +87,8 @@ def all_scores_for_chart(
             wx.cloud_cover_pct, wx.wind_speed_ms,
             wx.precipitation_mm, wx.lightning_risk,
             wind_tolerance_ms,
+            pressure_hpa=wx.pressure_hpa,
+            wind_gust_ms=wx.wind_gust_ms,
         )
         total = (
             orbital_weight * slot.alignment_score

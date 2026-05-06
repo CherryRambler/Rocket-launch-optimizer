@@ -2,7 +2,7 @@ import axios from "axios";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
-const client = axios.create({ baseURL: BASE, timeout: 45_000 });
+const client = axios.create({ baseURL: BASE, timeout: 120_000 });
 
 export const calculateWindows = (payload) =>
   client.post("/calculate-windows", payload).then(r => r.data);

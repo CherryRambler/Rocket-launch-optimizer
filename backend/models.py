@@ -17,12 +17,16 @@ class LaunchRequest(BaseModel):
     payload_mass_kg: float = Field(..., gt=0, le=10000)
     weather_weight: float = Field(default=0.20, ge=0.0, le=1.0)
     wind_tolerance_kmh: float = Field(default=54.0, ge=0.0, le=180.0)
+    lat: float = Field(default=13.7199)
+    lon: float = Field(default=80.2304)
 
 
 class ValidateWindowRequest(BaseModel):
     datetime_iso: str
     orbit_type: OrbitType
     payload_mass_kg: float = Field(..., gt=0, le=10000)
+    lat: float = Field(default=13.7199)
+    lon: float = Field(default=80.2304)
 
 
 class WeatherData(BaseModel):
@@ -33,6 +37,8 @@ class WeatherData(BaseModel):
     temperature_c: float
     precipitation_mm: float
     humidity_pct: float
+    pressure_hpa: float
+    wind_gust_ms: float
     lightning_risk: bool
     weather_score: float
     launch_risk_level: str  # "GO", "MARGINAL", "SCRUB"
@@ -66,7 +72,9 @@ class LaunchWindow(BaseModel):
     cloud_cover_pct: float
     wind_speed_ms: float
     wind_direction_deg: float
+    wind_gust_ms: float
     temperature_c: float
+    pressure_hpa: float
     lightning_risk: bool
     launch_risk_level: str
     orbit_type: OrbitType
@@ -87,6 +95,8 @@ class OrbitPreviewResponse(BaseModel):
     period_minutes: float
     orbital_velocity_ms: float
     ground_track: List[dict]   # [{lon, lat}] for Cesium polyline
+    orbit_points: List[dict]   # [{t_sec, lon, lat, alt_km}] for live animation
+    current_position: dict     # {timestamp, t_sec, lon, lat, alt_km}
     cesium_czml: dict
 
 

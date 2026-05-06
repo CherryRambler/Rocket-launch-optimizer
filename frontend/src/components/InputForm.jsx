@@ -10,7 +10,7 @@ const ORBITS = [
 ];
 
 export default function InputForm({ onSubmit }) {
-  const { formValues, setFormValues, loading } = useApp();
+  const { formValues, setFormValues, loading, selectedSite } = useApp();
   const today    = format(new Date(), "yyyy-MM-dd");
   const nextWeek = format(addDays(new Date(), 7), "yyyy-MM-dd");
 
@@ -27,7 +27,14 @@ export default function InputForm({ onSubmit }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const payload = { ...v, payload_mass_kg: parseFloat(v.payload_mass_kg) };
+    const payload = { 
+      ...v, 
+      payload_mass_kg: parseFloat(v.payload_mass_kg),
+      launch_site: selectedSite.id,
+      launch_site_name: selectedSite.name,
+      lat: selectedSite.lat,
+      lon: selectedSite.lon
+    };
     setFormValues(payload);
     onSubmit(payload);
   };
